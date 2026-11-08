@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>撞詞</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;900&family=Noto+Sans+TC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4efe6; --paper:#fffaf1; --ink:#1f1b16; --muted:#7a6f62; --line:#e0d6c6;
+  --a:#e4572e; --b:#2e86ab; --ok:#3d9a5b;
+  --serif:"Noto Serif TC",serif; --sans:"Noto Sans TC",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#17140f; --paper:#221e18; --ink:#f2ebe0; --muted:#a39886; --line:#3a332a;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;display:flex;justify-content:center}
+main{width:100%;max-width:520px;padding:28px 16px 48px}
+h1{font-family:var(--serif);font-weight:900;font-size:56px;letter-spacing:.08em;margin:0;line-height:1}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.logo{width:56px;height:40px;position:relative}
+.logo i{position:absolute;top:0;width:40px;height:40px;border-radius:50%;mix-blend-mode:multiply;opacity:.85}
+@media (prefers-color-scheme:dark){.logo i{mix-blend-mode:screen}}
+.logo i:first-child{left:0;background:var(--a)} .logo i:last-child{left:16px;background:var(--b)}
+.tag{color:var(--muted);margin:4px 0 24px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tabs button{flex:1;background:none;border:1px solid var(--line);color:var(--muted)}
+.tabs button.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+input{width:100%;font:inherit;font-size:17px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);outline:none}
+input:focus{border-color:var(--ink)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--ink);font-weight:400}
+.seg button.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);font-weight:600}
+button{font:inherit;font-weight:600;cursor:pointer;border:0;border-radius:10px;padding:12px 14px;background:var(--ink);color:var(--paper)}
+button:disabled{opacity:.4;cursor:default}
+.primary{width:100%;margin-top:18px;font-size:17px;padding:14px}
+.ghost{background:none;color:var(--muted);border:1px solid var(--line)}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}
+.err{color:var(--a);font-size:14px;min-height:20px;margin-top:8px}
+.code{font-family:var(--serif);font-size:44px;font-weight:900;letter-spacing:.25em;text-align:center;margin:6px 0}
+.row{display:flex;gap:8px;align-items:center}
+.row > button{flex:none;white-space:nowrap}
+.row > .primary{flex:1}
+.players{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+.players li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
+.dot.on{background:var(--ok)}
+.players .st{margin-left:auto;font-size:13px;color:var(--muted)}
+.players .st.done{color:var(--ok);font-weight:600}
+.top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.round{font-family:var(--serif);font-size:22px;font-weight:900}
+.timer{font-variant-numeric:tabular-nums;font-size:22px;font-weight:600}
+.timer.low{color:var(--a)}
+.bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:16px}
+.bar div{height:100%;background:var(--ink);transition:width .25s linear}
+.prev{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin:8px 0 4px}
+.chip{font-family:var(--serif);font-size:24px;font-weight:900;padding:6px 14px;border-radius:999px;border:2px solid var(--ink)}
+.plus{color:var(--muted);font-size:20px}
+.prompt{text-align:center;color:var(--muted);font-size:14px;margin:4px 0 16px}
+.big{font-size:22px;text-align:center;font-family:var(--serif);font-weight:900}
+.sent{text-align:center;padding:14px;border-radius:10px;background:var(--bg)}
+.sent b{font-family:var(--serif);font-size:24px;display:block;margin-top:4px}
+.reveal{display:grid;gap:10px;margin:8px 0}
+.rv{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:12px;background:var(--bg);opacity:0;transform:translateY(8px);animation:in .4s forwards}
+.rv .w{font-family:var(--serif);font-size:26px;font-weight:900}
+.rv .w.none{color:var(--muted);font-size:16px;font-weight:400;font-family:var(--sans)}
+.rv .n{color:var(--muted);font-size:14px}
+@keyframes in{to{opacity:1;transform:none}}
+.verdict{text-align:center;font-family:var(--serif);font-weight:900;font-size:20px;margin:14px 0 4px}
+.win{text-align:center;padding:10px 0 4px}
+.win .venn{width:120px;height:80px;margin:0 auto 10px;position:relative}
+.win .venn i{position:absolute;top:0;width:80px;height:80px;border-radius:50%;opacity:.85;mix-blend-mode:multiply}
+@media (prefers-color-scheme:dark){.win .venn i{mix-blend-mode:screen}}
+.win .venn i:first-child{background:var(--a);left:40px;animation:mergeL 1s ease forwards}
+.win .venn i:last-child{background:var(--b);left:0;animation:mergeR 1s ease forwards}
+@keyframes mergeL{from{left:60px}to{left:20px}} @keyframes mergeR{from{left:-20px}to{left:20px}}
+.win .word{font-family:var(--serif);font-weight:900;font-size:48px;margin:6px 0}
+.hist{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-size:15px}
+.hist li{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.hist .r{color:var(--muted);width:44px;flex:none}
+.hist .ok{color:var(--ok);font-weight:600}
+.hidden{display:none!important}
+.how ol{padding-left:20px;margin:0;line-height:1.8}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><div class="logo"><i></i><i></i></div><h1>撞詞</h1></div>
+  <p class="tag">各自寫一個詞，直到你們撞在一起。</p>
+
+  <!-- 首頁 -->
+  <section id="home">
+    <div class="card">
+      <div class="tabs">
+        <button data-tab="create" class="on">開房間</button>
+        <button data-tab="join">輸入房號</button>
+        <button data-tab="match">隨機配對</button>
+      </div>
+      <label for="name">你的暱稱</label>
+      <input id="name" maxlength="12" placeholder="例如：小明">
+
+      <div data-pane="create">
+        <label>人數</label>
+        <div class="seg" id="size"><button data-v="2" class="on">2 人</button><button data-v="3">3 人</button><button data-v="4">4 人</button></div>
+        <label>每輪時間</label>
+        <div class="seg" id="secs"><button data-v="30">30 秒</button><button data-v="60" class="on">60 秒</button></div>
+        <button class="primary" id="btnCreate">開房間</button>
+        <p class="hint">開好後把連結傳給朋友，人到齊就自動開始。</p>
+      </div>
+      <div data-pane="join" class="hidden">
+        <label for="code">房號</label>
+        <input id="code" maxlength="4" placeholder="4 碼英數" style="text-transform:uppercase;letter-spacing:.2em">
+        <button class="primary" id="btnJoin">加入</button>
+      </div>
+      <div data-pane="match" class="hidden">
+        <p class="hint">和一位陌生人兩人一組，每輪 60 秒。</p>
+        <button class="primary" id="btnMatch">開始配對</button>
+      </div>
+      <div class="err" id="err"></div>
+    </div>
+    <div class="card how">
+      <ol>
+        <li>第一輪：每個人隨便寫一個詞。</li>
+        <li>同時揭曉後，想一個能連起上一輪所有詞的新詞。</li>
+        <li>一直聯想下去，直到所有人寫出同一個詞。</li>
+      </ol>
+      <p class="hint">提交後不能修改；時間到還沒送出的不算，這輪重來。</p>
+    </div>
+  </section>
+
+  <!-- 配對中 -->
+  <section id="matching" class="hidden">
+    <div class="card" style="text-align:center">
+      <p><span class="spin"></span>正在幫你找人…</p>
+      <button class="ghost" id="btnCancelMatch">取消</button>
+    </div>
+  </section>
+
+  <!-- 等人 -->
+  <section id="lobby" class="hidden">
+    <div class="card">
+      <div style="text-align:center;color:var(--muted);font-size:14px">房號</div>
+      <div class="code" id="lobbyCode"></div>
+      <div class="row"><input id="link" readonly><button id="btnCopy">複製</button></div>
+      <ul class="players" id="lobbyPlayers"></ul>
+      <p class="hint" id="lobbyHint"></p>
+      <button class="ghost primary" id="btnLeave">離開房間</button>
+    </div>
+  </section>
+
+  <!-- 遊戲中 -->
+  <section id="game" class="hidden">
+    <div class="card">
+      <div class="top"><span class="round" id="roundNo"></span><span class="timer" id="timer"></span></div>
+      <div class="bar"><div id="barFill"></div></div>
+      <div id="prevBox">
+        <div class="prev" id="prev"></div>
+        <p class="prompt">想一個能連起這些詞的詞</p>
+      </div>
+      <p class="prompt big" id="firstPrompt">先隨便想一個詞</p>
+      <form id="form">
+        <input id="word" maxlength="20" autocomplete="off" placeholder="輸入一個詞">
+        <button class="primary" id="btnSubmit">送出（不能改）</button>
+      </form>
+      <div class="sent hidden" id="sent">你寫了<b id="sentWord"></b></div>
+      <ul class="players" id="gamePlayers"></ul>
+    </div>
+  </section>
+
+  <!-- 揭曉 -->
+  <section id="reveal" class="hidden">
+    <div class="card">
+      <div class="top"><span class="round" id="revRound"></span><span class="timer" id="revTimer"></span></div>
+      <div class="reveal" id="revList"></div>
+      <div class="verdict" id="verdict"></div>
+    </div>
+  </section>
+
+  <!-- 成功 -->
+  <section id="won" class="hidden">
+    <div class="card win">
+      <div class="venn"><i></i><i></i></div>
+      <div style="color:var(--muted)" id="wonSub"></div>
+      <div class="word" id="wonWord"></div>
+    </div>
+    <div class="card">
+      <ul class="hist" id="hist"></ul>
+    </div>
+    <div class="row">
+      <button class="primary" id="btnAgain" style="margin-top:0">再玩一局</button>
+      <button class="primary ghost" id="btnHome" style="margin-top:0">回首頁</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = { get(k){ try{return localStorage.getItem(k)}catch{return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch{} } };
+
+// 玩家 ID 存 sessionStorage：每個分頁各自一位玩家，重新整理仍可回到房間
+const ss = { get(k){ try{return sessionStorage.getItem(k)}catch{return null} }, set(k,v){ try{sessionStorage.setItem(k,v)}catch{} } };
+let ws, playerId = ss.get('pid'), state = null, roomCode = null, tick = null;
+let opts = { size: 2, seconds: 60 };
+$('name').value = store.get('name') || '';
+
+function show(id){ for (const s of ['home','matching','lobby','game','reveal','won']) $(s).classList.toggle('hidden', s !== id); }
+function err(msg){ $('err').textContent = msg || ''; }
+function myName(){ const n = $('name').value.trim(); store.set('name', n); return n; }
+function sendMsg(m){ if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); }
+function urlCode(){ return (new URLSearchParams(location.search).get('r') || '').toUpperCase(); }
+function setUrl(code){ const u = new URL(location.href); if (code) u.searchParams.set('r', code); else u.searchParams.delete('r'); history.replaceState(null, '', u); }
+
+function connect(){
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+  ws.onopen = () => sendMsg({ t:'hello', playerId });
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.t === 'hello') {
+      playerId = m.playerId; ss.set('pid', playerId);
+      const c = roomCode || urlCode();
+      // 斷線重連或已有暱稱就直接進房；第一次從連結進來先讓他填暱稱
+      if (c) { $('code').value = c; if (roomCode || myName()) sendMsg({ t:'join', code:c, name: myName() }); else $('name').focus(); }
+    }
+    else if (m.t === 'joined') { roomCode = m.code; setUrl(m.code); err(); }
+    else if (m.t === 'matching') show('matching');
+    else if (m.t === 'error') { err(m.msg); if (!state) { roomCode = null; setUrl(null); switchTab(urlCode() ? 'join':'create'); show('home'); } }
+    else if (m.t === 'state') { state = m.state; render(); }
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+
+function playerList(el, withStatus){
+  el.innerHTML = state.players.map(p => `<li><span class="dot ${p.online?'on':''}"></span>${esc(p.name)}${p.id===playerId?'（你）':''}${
+    withStatus ? `<span class="st ${p.submitted?'done':''}">${p.submitted?'已送出':'思考中…'}</span>` : ''}</li>`).join('')
+    + (withStatus ? '' : Array.from({length: state.size - state.players.length}, () => '<li style="color:var(--muted)"><span class="dot"></span>等待加入…</li>').join(''));
+}
+
+function render(){
+  clearInterval(tick);
+  const s = state;
+  if (s.phase === 'lobby') {
+    show('lobby');
+    $('lobbyCode').textContent = s.code;
+    $('link').value = location.origin + '/?r=' + s.code;
+    playerList($('lobbyPlayers'), false);
+    $('lobbyHint').textContent = `${s.size} 人房 · 每輪 ${s.seconds} 秒 · 還差 ${s.size - s.players.length} 人`;
+  }
+  else if (s.phase === 'playing') {
+    const wasHidden = $('game').classList.contains('hidden');
+    show('game');
+    $('roundNo').textContent = `第 ${s.round} 輪`;
+    const first = !s.prev;
+    $('prevBox').classList.toggle('hidden', first);
+    $('firstPrompt').classList.toggle('hidden', !first);
+    if (!first) $('prev').innerHTML = s.prev.map(w => `<span class="chip">${esc(w)}</span>`).join('<span class="plus">＋</span>');
+    const done = s.mine != null;
+    $('form').classList.toggle('hidden', done);
+    $('sent').classList.toggle('hidden', !done);
+    if (done) $('sentWord').textContent = s.mine;
+    else if (wasHidden || $('form').dataset.round != s.round) { $('word').value = ''; $('form').dataset.round = s.round; $('word').focus(); }
+    playerList($('gamePlayers'), true);
+    const upd = () => {
+      const left = Math.max(0, s.deadline - Date.now());
+      $('timer').textContent = Math.ceil(left/1000) + ' 秒';
+      $('timer').classList.toggle('low', left < 10000);
+      $('barFill').style.width = (left / (s.seconds*1000) * 100) + '%';
+    };
+    upd(); tick = setInterval(upd, 250);
+  }
+  else if (s.phase === 'reveal') {
+    show('reveal');
+    const h = s.history[s.history.length-1];
+    $('revRound').textContent = `第 ${h.round} 輪揭曉`;
+    $('revList').innerHTML = h.words.map((w,i) => `<div class="rv" style="animation-delay:${i*.25}s"><span class="n">${esc(w.name)}</span><span class="w ${w.word==null?'none':''}">${w.word==null?'沒送出':esc(w.word)}</span></div>`).join('');
+    $('verdict').textContent = h.complete ? '還沒撞上，繼續聯想！' : '有人沒送出，這輪不算，用上一輪的詞重來';
+    const upd = () => { $('revTimer').textContent = Math.max(0, Math.ceil((s.revealUntil - Date.now())/1000)) + ' 秒後下一輪'; };
+    upd(); tick = setInterval(upd, 250);
+  }
+  else if (s.phase === 'won') {
+    show('won');
+    const h = s.history[s.history.length-1];
+    $('wonSub').textContent = `第 ${h.round} 輪，你們都寫了`;
+    $('wonWord').textContent = h.words[0].word;
+    $('hist').innerHTML = s.history.map(r => `<li><span class="r">#${r.round}</span><span class="${r.matched?'ok':''}">${r.words.map(w => esc(w.word ?? '—')).join(' · ')}</span></li>`).join('');
+  }
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== t));
+  err();
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+for (const [id, key] of [['size','size'],['secs','seconds']]) {
+  $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    opts[key] = Number(b.dataset.v);
+  });
+}
+$('btnCreate').onclick = () => sendMsg({ t:'create', name: myName(), ...opts });
+$('btnJoin').onclick = () => { const c = $('code').value.trim().toUpperCase(); if (c.length !== 4) return err('房號是 4 碼'); sendMsg({ t:'join', code:c, name: myName() }); };
+$('code').onkeydown = (e) => { if (e.key === 'Enter') $('btnJoin').click(); };
+$('btnMatch').onclick = () => sendMsg({ t:'match', name: myName() });
+$('btnCancelMatch').onclick = () => { sendMsg({ t:'cancelMatch' }); show('home'); };
+$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText($('link').value); $('btnCopy').textContent = '已複製'; } catch { $('link').select(); } setTimeout(() => $('btnCopy').textContent = '複製', 1500); };
+$('form').onsubmit = (e) => { e.preventDefault(); const w = $('word').value.trim(); if (w) sendMsg({ t:'submit', word:w }); };
+$('btnAgain').onclick = () => sendMsg({ t:'again' });
+const goHome = () => { sendMsg({ t:'leave' }); state = null; roomCode = null; setUrl(null); clearInterval(tick); show('home'); };
+$('btnHome').onclick = goHome;
+$('btnLeave').onclick = goHome;
+if (urlCode()) switchTab('join');
+connect();
+</script>
+</body>
+</html>

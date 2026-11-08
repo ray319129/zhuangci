@@ -1,0 +1,17 @@
+{
+  "name": "zhuangci",
+  "version": "1.0.0",
+  "description": "撞詞：多人同詞聯想遊戲",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.22.2"
+  }
+}
