@@ -84,6 +84,7 @@ button:disabled{opacity:.4;cursor:default}
 .hist li{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
 .hist .r{color:var(--muted);width:44px;flex:none}
 .hist .ok{color:var(--ok);font-weight:600}
+.banner{background:var(--a);color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px}
 .hidden{display:none!important}
 .how ol{padding-left:20px;margin:0;line-height:1.8}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
@@ -94,6 +95,7 @@ button:disabled{opacity:.4;cursor:default}
 <main>
   <div class="brand"><div class="logo"><i></i><i></i></div><h1>撞詞</h1></div>
   <p class="tag">各自寫一個詞，直到你們撞在一起。</p>
+  <div class="banner hidden" id="banner"></div>
 
   <!-- 首頁 -->
   <section id="home">
@@ -140,6 +142,15 @@ button:disabled{opacity:.4;cursor:default}
     <div class="card" style="text-align:center">
       <p><span class="spin"></span>正在幫你找人…</p>
       <button class="ghost" id="btnCancelMatch">取消</button>
+    </div>
+  </section>
+
+  <!-- 連線中 -->
+  <section id="connecting" class="hidden">
+    <div class="card" style="text-align:center">
+      <p><span class="spin"></span><span id="connMsg">正在連線…</span></p>
+      <p class="hint">玩家之間是直接連線，通常幾秒內就會連上。</p>
+      <button class="ghost" id="btnCancelConn">取消</button>
     </div>
   </section>
 
@@ -200,124 +211,6 @@ button:disabled{opacity:.4;cursor:default}
   </section>
 </main>
 
-<script>
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const store = { get(k){ try{return localStorage.getItem(k)}catch{return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch{} } };
-
-// 玩家 ID 存 sessionStorage：每個分頁各自一位玩家，重新整理仍可回到房間
-const ss = { get(k){ try{return sessionStorage.getItem(k)}catch{return null} }, set(k,v){ try{sessionStorage.setItem(k,v)}catch{} } };
-let ws, playerId = ss.get('pid'), state = null, roomCode = null, tick = null;
-let opts = { size: 2, seconds: 60 };
-$('name').value = store.get('name') || '';
-
-function show(id){ for (const s of ['home','matching','lobby','game','reveal','won']) $(s).classList.toggle('hidden', s !== id); }
-function err(msg){ $('err').textContent = msg || ''; }
-function myName(){ const n = $('name').value.trim(); store.set('name', n); return n; }
-function sendMsg(m){ if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); }
-function urlCode(){ return (new URLSearchParams(location.search).get('r') || '').toUpperCase(); }
-function setUrl(code){ const u = new URL(location.href); if (code) u.searchParams.set('r', code); else u.searchParams.delete('r'); history.replaceState(null, '', u); }
-
-function connect(){
-  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
-  ws.onopen = () => sendMsg({ t:'hello', playerId });
-  ws.onmessage = (e) => {
-    const m = JSON.parse(e.data);
-    if (m.t === 'hello') {
-      playerId = m.playerId; ss.set('pid', playerId);
-      const c = roomCode || urlCode();
-      // 斷線重連或已有暱稱就直接進房；第一次從連結進來先讓他填暱稱
-      if (c) { $('code').value = c; if (roomCode || myName()) sendMsg({ t:'join', code:c, name: myName() }); else $('name').focus(); }
-    }
-    else if (m.t === 'joined') { roomCode = m.code; setUrl(m.code); err(); }
-    else if (m.t === 'matching') show('matching');
-    else if (m.t === 'error') { err(m.msg); if (!state) { roomCode = null; setUrl(null); switchTab(urlCode() ? 'join':'create'); show('home'); } }
-    else if (m.t === 'state') { state = m.state; render(); }
-  };
-  ws.onclose = () => setTimeout(connect, 1500);
-}
-
-function playerList(el, withStatus){
-  el.innerHTML = state.players.map(p => `<li><span class="dot ${p.online?'on':''}"></span>${esc(p.name)}${p.id===playerId?'（你）':''}${
-    withStatus ? `<span class="st ${p.submitted?'done':''}">${p.submitted?'已送出':'思考中…'}</span>` : ''}</li>`).join('')
-    + (withStatus ? '' : Array.from({length: state.size - state.players.length}, () => '<li style="color:var(--muted)"><span class="dot"></span>等待加入…</li>').join(''));
-}
-
-function render(){
-  clearInterval(tick);
-  const s = state;
-  if (s.phase === 'lobby') {
-    show('lobby');
-    $('lobbyCode').textContent = s.code;
-    $('link').value = location.origin + '/?r=' + s.code;
-    playerList($('lobbyPlayers'), false);
-    $('lobbyHint').textContent = `${s.size} 人房 · 每輪 ${s.seconds} 秒 · 還差 ${s.size - s.players.length} 人`;
-  }
-  else if (s.phase === 'playing') {
-    const wasHidden = $('game').classList.contains('hidden');
-    show('game');
-    $('roundNo').textContent = `第 ${s.round} 輪`;
-    const first = !s.prev;
-    $('prevBox').classList.toggle('hidden', first);
-    $('firstPrompt').classList.toggle('hidden', !first);
-    if (!first) $('prev').innerHTML = s.prev.map(w => `<span class="chip">${esc(w)}</span>`).join('<span class="plus">＋</span>');
-    const done = s.mine != null;
-    $('form').classList.toggle('hidden', done);
-    $('sent').classList.toggle('hidden', !done);
-    if (done) $('sentWord').textContent = s.mine;
-    else if (wasHidden || $('form').dataset.round != s.round) { $('word').value = ''; $('form').dataset.round = s.round; $('word').focus(); }
-    playerList($('gamePlayers'), true);
-    const upd = () => {
-      const left = Math.max(0, s.deadline - Date.now());
-      $('timer').textContent = Math.ceil(left/1000) + ' 秒';
-      $('timer').classList.toggle('low', left < 10000);
-      $('barFill').style.width = (left / (s.seconds*1000) * 100) + '%';
-    };
-    upd(); tick = setInterval(upd, 250);
-  }
-  else if (s.phase === 'reveal') {
-    show('reveal');
-    const h = s.history[s.history.length-1];
-    $('revRound').textContent = `第 ${h.round} 輪揭曉`;
-    $('revList').innerHTML = h.words.map((w,i) => `<div class="rv" style="animation-delay:${i*.25}s"><span class="n">${esc(w.name)}</span><span class="w ${w.word==null?'none':''}">${w.word==null?'沒送出':esc(w.word)}</span></div>`).join('');
-    $('verdict').textContent = h.complete ? '還沒撞上，繼續聯想！' : '有人沒送出，這輪不算，用上一輪的詞重來';
-    const upd = () => { $('revTimer').textContent = Math.max(0, Math.ceil((s.revealUntil - Date.now())/1000)) + ' 秒後下一輪'; };
-    upd(); tick = setInterval(upd, 250);
-  }
-  else if (s.phase === 'won') {
-    show('won');
-    const h = s.history[s.history.length-1];
-    $('wonSub').textContent = `第 ${h.round} 輪，你們都寫了`;
-    $('wonWord').textContent = h.words[0].word;
-    $('hist').innerHTML = s.history.map(r => `<li><span class="r">#${r.round}</span><span class="${r.matched?'ok':''}">${r.words.map(w => esc(w.word ?? '—')).join(' · ')}</span></li>`).join('');
-  }
-}
-
-function switchTab(t){
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-  document.querySelectorAll('[data-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== t));
-  err();
-}
-document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
-for (const [id, key] of [['size','size'],['secs','seconds']]) {
-  $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
-    $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-    opts[key] = Number(b.dataset.v);
-  });
-}
-$('btnCreate').onclick = () => sendMsg({ t:'create', name: myName(), ...opts });
-$('btnJoin').onclick = () => { const c = $('code').value.trim().toUpperCase(); if (c.length !== 4) return err('房號是 4 碼'); sendMsg({ t:'join', code:c, name: myName() }); };
-$('code').onkeydown = (e) => { if (e.key === 'Enter') $('btnJoin').click(); };
-$('btnMatch').onclick = () => sendMsg({ t:'match', name: myName() });
-$('btnCancelMatch').onclick = () => { sendMsg({ t:'cancelMatch' }); show('home'); };
-$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText($('link').value); $('btnCopy').textContent = '已複製'; } catch { $('link').select(); } setTimeout(() => $('btnCopy').textContent = '複製', 1500); };
-$('form').onsubmit = (e) => { e.preventDefault(); const w = $('word').value.trim(); if (w) sendMsg({ t:'submit', word:w }); };
-$('btnAgain').onclick = () => sendMsg({ t:'again' });
-const goHome = () => { sendMsg({ t:'leave' }); state = null; roomCode = null; setUrl(null); clearInterval(tick); show('home'); };
-$('btnHome').onclick = goHome;
-$('btnLeave').onclick = goHome;
-if (urlCode()) switchTab('join');
-connect();
-</script>
+<script type="module" src="game.js"></script>
 </body>
 </html>

@@ -10,8 +10,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "ws": "^8.22.2"
-  }
+  "type": "commonjs"
 }
